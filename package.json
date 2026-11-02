@@ -1,0 +1,24 @@
+{
+  "name": "driftcheck",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "lint": "eslint src/**/*"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  },
+  "dependencies": {
+    "@forge/api": "^8.4.0",
+    "@forge/bridge": "7.2.1-next.13",
+    "@forge/kvs": "^2.1.1",
+    "@forge/llm": "^1.0.9",
+    "@forge/react": "12.4.0-next.3",
+    "@forge/resolver": "2.0.2-next.0",
+    "react": "^18.2.0"
+  },
+  "description": "Flags Confluence pages that recently finished Jira work made out of date, with proof and a one-click fix."
+}

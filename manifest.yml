@@ -1,0 +1,137 @@
+modules:
+  # 1) The "Driftcheck" entry under every Confluence page title.
+  confluence:contentBylineItem:
+    - key: driftcheck-byline
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: Driftcheck
+      tooltip: Check this page against recent Jira work
+
+  # 2) A "Driftcheck" dashboard inside each space: pages ranked by risk.
+  confluence:spacePage:
+    - key: driftcheck-dashboard
+      resource: dashboard
+      resolver:
+        function: resolver
+      render: native
+      title: Driftcheck
+      route: driftcheck
+
+  # 3) A Rovo agent people can chat with, plus the tools (actions) it can use.
+  rovo:agent:
+    - key: driftcheck-agent
+      name: Driftcheck
+      description: Finds Confluence pages that recent Jira work made out of date, and
+        suggests fixes.
+      prompt: >
+        You are Driftcheck. You help teams keep Confluence documentation true
+        after work changes in Jira.
+
+        When the user asks whether a page is still correct or up to date, use
+        the "Check page for drift" action. When the user asks which pages a Jira
+        ticket affects, made wrong, or needs updated after a change, use the
+        "Find pages affected by a ticket" action with the ticket key (for
+        example KAN-1).
+
+        Report results clearly: for each out-of-date sentence, quote what the
+        page says, the Jira ticket that contradicts it, and the suggested fix.
+        Link pages and tickets. Never invent findings: only report what the
+        actions return. If an action says nothing is wrong, say the page looks
+        up to date.
+      conversationStarters:
+        - Is this page still up to date?
+        - Which pages did KAN-1 make out of date?
+        - What documentation needs updating after recent work?
+      actions:
+        - check-page-drift
+        - find-pages-for-ticket
+
+  action:
+    - key: check-page-drift
+      name: Check page for drift
+      function: check-page
+      actionVerb: GET
+      description: >
+        Checks a Confluence page against Jira tickets finished in the last 30
+        days and returns the sentences that are now out of date, with the ticket
+        that proves it and a suggested fix. Uses the page currently open; a
+        numeric page id can be given instead.
+      inputs:
+        pageId:
+          title: Page id
+          type: string
+          required: false
+          description: Numeric Confluence page id. Leave empty to use the page currently
+            open.
+    - key: find-pages-for-ticket
+      name: Find pages affected by a ticket
+      function: find-pages
+      actionVerb: GET
+      description: >
+        Given a Jira ticket key, finds the Confluence pages that the ticket's
+        change made out of date, and returns the wrong sentences with suggested
+        fixes.
+      inputs:
+        issueKey:
+          title: Jira ticket key
+          type: string
+          required: true
+          description: The Jira ticket key, for example KAN-1.
+
+  # 4) Automatic check: when a Jira ticket moves to Done, comment with the pages it made out of date.
+  trigger:
+    - key: driftcheck-ticket-done
+      function: on-ticket-done
+      events:
+        - avi:jira:updated:issue
+      filter:
+        ignoreSelf: true
+
+  # Atlassian-hosted Claude models (no API key, data stays inside Atlassian).
+  llm:
+    - key: driftcheck-llm
+      model:
+        - claude
+
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: check-page
+      handler: index.checkPage
+    - key: find-pages
+      handler: index.findPagesForTicket
+    - key: on-ticket-done
+      handler: index.onTicketDone
+
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+  - key: dashboard
+    path: src/frontend/dashboard.jsx
+
+permissions:
+  scopes:
+    - read:page:confluence
+    - read:space:confluence
+    - write:page:confluence
+    - search:confluence
+    - read:jira-work
+    - write:jira-work
+    - storage:app
+    - read:graph:page:confluence
+    - read:graph:issue:jira
+    - read:graph:user:atlassian
+
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/b41a2fa4-3cd0-46a1-913f-639fe52322ae
+  compatibility:
+    confluence:
+      required: true
+    jira:
+      required: false
