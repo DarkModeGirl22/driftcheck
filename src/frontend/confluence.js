@@ -11,7 +11,7 @@ export const DAYS_BACK = 30;
 const DISMISS_KEY = 'driftcheck-dismissed';
 const CACHE_KEY = 'driftcheck-cache';
 // Bump when the AI prompt changes, so old saved results are not reused.
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 
 async function json(res, what) {
   if (!res.ok) throw new Error(`Couldn't ${what} (error ${res.status}).`);

@@ -179,12 +179,14 @@ Do NOT flag:
 - sentences that already describe the new situation,
 - changes that only add an option while the old way still works,
 - tickets whose comments say the change was rolled back, cancelled or not done,
+- sentences that are still true but incomplete (the change only adds something new next to them),
 - sentences that only mention the same topic,
 - pages that are old but still true,
 - anything you are unsure about.
 
 Formatting rules:
 - "sentence": copied exactly from the page text, one line only.
+- "wrong": the exact words inside that sentence that are false today (for example "PagerDuty", "10:00", "every business trip"). If you cannot quote such words, the sentence is not out of date: leave it out.
 - "evidence": a short exact quote from the ticket (description or comment).
 - "suggestion": the sentence rewritten so it is true again, in the same language, style and format as the page.
 - "confidence": "high" if the ticket states the change explicitly, otherwise "medium". Leave out anything that would be "low".
@@ -192,7 +194,7 @@ Formatting rules:
 - When several tickets change the same thing, the most recently finished one wins.
 
 Answer with JSON only, no other text, in this exact shape:
-{"findings":[{"ticket":"KAN-1","sentence":"...","problem":"one short line","evidence":"...","suggestion":"...","confidence":"high|medium"}]}
+{"findings":[{"ticket":"KAN-1","sentence":"...","wrong":"...","problem":"one short line","evidence":"...","suggestion":"...","confidence":"high|medium"}]}
 If nothing is out of date, answer {"findings":[]}.`;
 
 /**
@@ -357,7 +359,10 @@ export async function analyzeWithAI(page, tickets, others = []) {
         // A "fix" identical to the sentence means the AI itself found nothing wrong.
         loose(f.suggestion) !== loose(f.sentence) &&
         // The AI must quote a sentence that really is on the page (protects against made-up findings).
-        loose(page.text).includes(loose(f.sentence))
+        loose(page.text).includes(loose(f.sentence)) &&
+        // ...and must quote the words in it that are false today: "incomplete" is not "wrong".
+        f.wrong &&
+        loose(f.sentence).includes(loose(f.wrong))
     )
     // One card per sentence: when two tickets hit the same sentence, keep the first and note the other.
     .filter((f) => {
